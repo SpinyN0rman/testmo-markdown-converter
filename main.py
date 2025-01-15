@@ -19,12 +19,19 @@ if uploaded_file is not None:
     markdown = []
 
     for index, row in df.iterrows():
-        # todo needs error handling if the expected headers aren't present
-        header = row["Case"]
+        try:
+            header = row["Case"]
+        except KeyError:
+            st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
+            break
         header = "## " + header + "\n"
         markdown.append(header)
 
-        lines = row["Description"].splitlines()
+        try:
+            lines = row["Description"].splitlines()
+        except KeyError:
+            st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
+            break
         lines = [strip_tags(line) for line in lines]
 
         for index, line in enumerate(lines):
