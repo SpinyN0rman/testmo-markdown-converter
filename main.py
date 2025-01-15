@@ -19,8 +19,9 @@ if uploaded_file is not None:
     markdown = []
 
     for index, row in df.iterrows():
+        # todo needs error handling if the expected headers aren't present
         header = row["Case"]
-        header = "### " + header + "\n"
+        header = "## " + header + "\n"
         markdown.append(header)
 
         lines = row["Description"].splitlines()
@@ -28,9 +29,9 @@ if uploaded_file is not None:
 
         for index, line in enumerate(lines):
             line = line.strip() + "\n"
-            line = line.replace("Feature:", "**Feature:**")
-            line = line.replace("Background:", "**Background:**")
-            line = line.replace("Scenario:", "**Scenario:**")
+            line = line.replace("Feature", "### Feature")
+            line = line.replace("Background", "### Background")
+            line = line.replace("Scenario", "### Scenario")
             line = line.replace("Given", "- **Given**")
             line = line.replace("When", "- **When**")
             line = line.replace("Then", "- **Then**")
