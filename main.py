@@ -47,15 +47,18 @@ if uploaded_file is not None:
                 line = line.replace("And", "    - **And**")
                 markdown.append(line)
 
+        # Remove any blank lines (they muck with GitLab formatting)
         for index, line in enumerate(markdown):
             if line == "\n":
                 markdown.pop(index)
 
+        # Write the markdown list into a single string for the code box
         code_box_text = ""
         for line in markdown:
             code_box_text = code_box_text + line
 
         st.code(code_box_text, language="markdown")
+
     elif organise_by == "Gherkin Feature Name":
         df = pd.read_csv(uploaded_file)
         markdown = []
@@ -68,17 +71,58 @@ if uploaded_file is not None:
                 st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
                 break
             feature = re.search(r"\bFeature: .+", cell).group().strip("Feature: ")
+            feature = feature.replace("-", " ").lower()
             background = re.search(r"\bBackground:(.+?)\n\n", cell, re.DOTALL).group()
             scenario = re.search(r"\bScenario:.+", cell, re.DOTALL).group()
+
+            # Turn the background into a list of lines, format to markdown, turn back into a string
+            background_list = background.splitlines()
+            background_formatted = ""
+            for background_inner in background_list:
+                background_inner = background_inner.strip() + "\n"
+                background_inner = background_inner.replace("Background", "### Background")
+                background_inner = background_inner.replace("Given", "- **Given**")
+                background_inner = background_inner.replace("When", "- **When**")
+                background_inner = background_inner.replace("Then", "- **Then**")
+                background_inner = background_inner.replace("And", "    - **And**")
+                background_formatted = background_formatted + background_inner
+
+            # Turn the scenario into a list of lines, format to markdown, turn back into a string
+            scenario_list = scenario.splitlines()
+            scenario_formatted = ""
+            for scenario_inner in scenario_list:
+                scenario_inner = scenario_inner.strip() + "\n"
+                scenario_inner = scenario_inner.replace("Scenario", "### Scenario")
+                scenario_inner = scenario_inner.replace("Given", "- **Given**")
+                scenario_inner = scenario_inner.replace("When", "- **When**")
+                scenario_inner = scenario_inner.replace("Then", "- **Then**")
+                scenario_inner = scenario_inner.replace("And", "    - **And**")
+                scenario_formatted = scenario_formatted + scenario_inner
+
             if feature in feature_files:
-                feature_files[feature]["scenarios"].append(scenario)
+                feature_files[feature]["scenarios"].append(scenario_formatted)
             else:
-                feature_files.update({feature: {"background": background, "scenarios": []}})
-                feature_files[feature]["scenarios"].append(scenario)
-        st.code(feature_files, language="markdown")
+                feature_files.update({feature: {"background": background_formatted, "scenarios": []}})
+                feature_files[feature]["scenarios"].append(scenario_formatted)
 
+        # Write the dictionary out into a flat list
+        for feature_inner in feature_files:
+            feature_header = f"## {feature_inner.title()}\n"
+            markdown.append(feature_header)
+            markdown.append(feature_files[feature_inner]["background"])
+            for feature_scenario in feature_files[feature_inner]["scenarios"]:
+                markdown.append(feature_scenario)
 
-    # with open("gherkin-markdown.txt", "w") as file:
-    #     file.writelines(markdown)
+        # Remove any blank lines (they muck with GitLab formatting)
+        for index, line in enumerate(markdown):
+            line = line.replace("\n\n", "\n")
+            markdown[index] = line
+            if line == "\n" or line == "":
+                markdown.pop(index)
 
-# feature_files = {"feature_name": {"background": "background_name", "scenarios": [[scenario1][scenario2]]}}
+        # Write the markdown list into a single string for the code box
+        code_box_text = ""
+        for line in markdown:
+            code_box_text = code_box_text + line
+
+        st.code(code_box_text, language="markdown")
