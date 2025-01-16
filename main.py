@@ -65,15 +65,25 @@ if uploaded_file is not None:
         feature_files = {}
 
         for index, row in df.iterrows():
+            # Try to find our expected Gherkin sections, if any aren't found, set them as an empty string
             try:
                 cell = strip_tags(row["Description"])
             except KeyError:
                 st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
                 break
-            feature = re.search(r"\bFeature: .+", cell).group().strip("Feature: ")
-            feature = feature.replace("-", " ").lower()
-            background = re.search(r"\bBackground:(.+?)\n\n", cell, re.DOTALL).group()
-            scenario = re.search(r"\bScenario:.+", cell, re.DOTALL).group()
+            try:
+                feature = re.search(r"\bFeature: .+", cell).group().strip("Feature: ")
+                feature = feature.replace("-", " ").lower()
+            except AttributeError:
+                feature = ""
+            try:
+                background = re.search(r"\bBackground:(.+?)\n\n", cell, re.DOTALL).group()
+            except AttributeError:
+                background = ""
+            try:
+                scenario = re.search(r"\bScenario:.+", cell, re.DOTALL).group()
+            except AttributeError:
+                scenario = ""
 
             # Turn the background into a list of lines, format to markdown, turn back into a string
             background_list = background.splitlines()
