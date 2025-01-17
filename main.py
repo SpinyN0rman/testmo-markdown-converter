@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
+from functions import gherkin_to_md
 
 def strip_tags(text):
     """Uses BeautifulSoup to strip HTML tags from text"""
@@ -26,6 +27,7 @@ if uploaded_file is not None:
             except KeyError:
                 st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
                 break
+            # Don't send the header through the formatter (it isn't gherkin text)
             header = "## " + header + "\n"
             markdown.append(header)
 
@@ -37,14 +39,7 @@ if uploaded_file is not None:
             lines = [strip_tags(line) for line in lines]
 
             for index, line in enumerate(lines):
-                line = line.strip() + "\n"
-                line = line.replace("Feature", "### Feature")
-                line = line.replace("Background", "### Background")
-                line = line.replace("Scenario", "### Scenario")
-                line = line.replace("Given", "- **Given**")
-                line = line.replace("When", "- **When**")
-                line = line.replace("Then", "- **Then**")
-                line = line.replace("And", "    - **And**")
+                line = gherkin_to_md(line, feature=3, background=3, scenario=3)
                 markdown.append(line)
 
         # Remove any blank lines (they muck with GitLab formatting)
@@ -72,7 +67,7 @@ if uploaded_file is not None:
                 st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
                 break
             try:
-                feature = re.search(r"\bFeature: .+", cell).group().strip("Feature: ")
+                feature = re.search(r"\bFeature: .+", cell).group()
                 feature = feature.replace("-", " ").lower()
             except AttributeError:
                 feature = ""
@@ -89,24 +84,14 @@ if uploaded_file is not None:
             background_list = background.splitlines()
             background_formatted = ""
             for background_inner in background_list:
-                background_inner = background_inner.strip() + "\n"
-                background_inner = background_inner.replace("Background", "### Background")
-                background_inner = background_inner.replace("Given", "- **Given**")
-                background_inner = background_inner.replace("When", "- **When**")
-                background_inner = background_inner.replace("Then", "- **Then**")
-                background_inner = background_inner.replace("And", "    - **And**")
+                background_inner = gherkin_to_md(background_inner, background=3)
                 background_formatted = background_formatted + background_inner
 
             # Turn the scenario into a list of lines, format to markdown, turn back into a string
             scenario_list = scenario.splitlines()
             scenario_formatted = ""
             for scenario_inner in scenario_list:
-                scenario_inner = scenario_inner.strip() + "\n"
-                scenario_inner = scenario_inner.replace("Scenario", "### Scenario")
-                scenario_inner = scenario_inner.replace("Given", "- **Given**")
-                scenario_inner = scenario_inner.replace("When", "- **When**")
-                scenario_inner = scenario_inner.replace("Then", "- **Then**")
-                scenario_inner = scenario_inner.replace("And", "    - **And**")
+                scenario_inner = gherkin_to_md(scenario_inner, scenario=3)
                 scenario_formatted = scenario_formatted + scenario_inner
 
             if feature in feature_files:
@@ -117,7 +102,7 @@ if uploaded_file is not None:
 
         # Write the dictionary out into a flat list
         for feature_inner in feature_files:
-            feature_header = f"## {feature_inner.title()}\n"
+            feature_header = gherkin_to_md(feature_inner, feature=2)
             markdown.append(feature_header)
             markdown.append(feature_files[feature_inner]["background"])
             for feature_scenario in feature_files[feature_inner]["scenarios"]:
