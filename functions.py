@@ -1,3 +1,12 @@
+from bs4 import BeautifulSoup
+
+
+def strip_tags(text):
+    """Uses BeautifulSoup to strip HTML tags from text"""
+    parsed = BeautifulSoup(text, 'html.parser')
+    return parsed.get_text()
+
+
 def gherkin_to_md(text, feature=2, background=3, scenario=3):
     text = text.strip() + "\n"
     h = "#"

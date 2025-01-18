@@ -1,13 +1,7 @@
 import streamlit as st
 import pandas as pd
-from bs4 import BeautifulSoup
 import re
-from functions import gherkin_to_md
-
-def strip_tags(text):
-    """Uses BeautifulSoup to strip HTML tags from text"""
-    parsed = BeautifulSoup(text, 'html.parser')
-    return parsed.get_text()
+from functions import gherkin_to_md, strip_tags
 
 st.title("Testmo CSV to Markdown Converter")
 st.text("Use this page to convert a CSV export from Testmo into Markdown which can easily be shared with a wider audience")
