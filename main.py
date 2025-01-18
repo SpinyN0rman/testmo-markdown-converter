@@ -10,12 +10,51 @@ st.markdown("_Note that this early version only looks at the 'Case' and 'Descrip
 how_to_tab, upload_tab, paste_tab = st.tabs(["How to use", "Upload a Testmo CSV", "Paste Gherkin code"])
 
 with how_to_tab:
-    st.header("How to use this app")
+    with open("how-to-content.md", "r") as file:
+        page_content = file.read()
+    st.markdown(page_content)
 with upload_tab:
     st.header("Upload a Testmo CSV")
     uploaded_file = st.file_uploader("Upload your CSV", type=["csv"])
     organise_by = st.selectbox("Organise by: ", ["Testmo Case Name", "Gherkin Feature Name"])
 
+    up_col1, up_col2, up_col3 = st.columns(spec=3)
+    up_col4, up_col5, up_col6 = st.columns(spec=3)
+
+    # Let the user choose the header levels
+    if organise_by == "Testmo Case Name":
+        with up_col1:
+            up_case_level = st.number_input("Header level for the Case Name line", value=2, min_value=1,
+                                                   max_value=6, key="up_case_h")
+        with up_col2:
+            st.text("")
+        with up_col3:
+            st.text("")
+        with up_col4:
+            up_feature_level = st.number_input("Header level for the Feature line", value=3, min_value=1,
+                                                max_value=6, key="up_feature_h")
+        with up_col5:
+            up_background_level = st.number_input("Header level for the Background line", value=3, min_value=1,
+                                                max_value=6, key="up_background_h")
+        with up_col6:
+            up_scenario_level = st.number_input("Header level for the Scenario line", value=3, min_value=1,
+                                                        max_value=6, key="up_scenario_h")
+        if up_case_level > 3 or up_feature_level > 3 or up_background_level > 3 or up_scenario_level > 3:
+            st.info("Note: Notion only supports header levels up to level three ('###')")
+    elif organise_by == "Gherkin Feature Name":
+        with up_col4:
+            up_feature_level = st.number_input("Header level for the Feature line", value=2, min_value=1,
+                                                max_value=6, key="up_feature_h")
+        with up_col5:
+            up_background_level = st.number_input("Header level for the Background line", value=3, min_value=1,
+                                                max_value=6, key="up_background_h")
+        with up_col6:
+            up_scenario_level = st.number_input("Header level for the Scenario line", value=3, min_value=1,
+                                                        max_value=6, key="up_scenario_h")
+        if up_feature_level > 3 or up_background_level > 3 or up_scenario_level > 3:
+            st.info("Note: Notion only supports header levels up to level three ('###')")
+
+    # When a file is uploaded, start the conversions
     if uploaded_file is not None:
         if organise_by == "Testmo Case Name":
             df = pd.read_csv(uploaded_file)
@@ -28,7 +67,7 @@ with upload_tab:
                     st.info("Error, the file does not contain the expected headers. Upload a new file to try again")
                     break
                 # Don't send the header through the formatter (it isn't gherkin text)
-                header = "## " + header + "\n"
+                header = "#" * up_case_level + " " + header + "\n"
                 markdown.append(header)
 
                 try:
@@ -39,7 +78,8 @@ with upload_tab:
                 lines = [strip_tags(line) for line in lines]
 
                 for index, line in enumerate(lines):
-                    line = gherkin_to_md(line, feature=3, background=3, scenario=3)
+                    line = gherkin_to_md(line, feature=up_feature_level, background=up_background_level,
+                                         scenario=up_scenario_level)
                     markdown.append(line)
 
             # Remove any blank lines (they muck with GitLab formatting)
@@ -84,14 +124,14 @@ with upload_tab:
                 background_list = background.splitlines()
                 background_formatted = ""
                 for background_inner in background_list:
-                    background_inner = gherkin_to_md(background_inner, background=3)
+                    background_inner = gherkin_to_md(background_inner, background=up_background_level)
                     background_formatted = background_formatted + background_inner
 
                 # Turn the scenario into a list of lines, format to markdown, turn back into a string
                 scenario_list = scenario.splitlines()
                 scenario_formatted = ""
                 for scenario_inner in scenario_list:
-                    scenario_inner = gherkin_to_md(scenario_inner, scenario=3)
+                    scenario_inner = gherkin_to_md(scenario_inner, scenario=up_scenario_level)
                     scenario_formatted = scenario_formatted + scenario_inner
 
                 if feature in feature_files:
@@ -102,7 +142,7 @@ with upload_tab:
 
             # Write the dictionary out into a flat list
             for feature_inner in feature_files:
-                feature_header = gherkin_to_md(feature_inner, feature=2)
+                feature_header = gherkin_to_md(feature_inner, feature=up_feature_level)
                 markdown.append(feature_header)
                 markdown.append(feature_files[feature_inner]["background"])
                 for feature_scenario in feature_files[feature_inner]["scenarios"]:
@@ -129,20 +169,24 @@ with paste_tab:
     col1, col2, col3 = st.columns(spec=3)
 
     with col1:
-        feature_level = st.number_input("Header level for the Feature line", value=2, min_value=1, max_value=6)
+        paste_feature_level = st.number_input("Header level for the Feature line", value=2, min_value=1,
+                                              max_value=6, key="paste_feature_h")
     with col2:
-        background_level = st.number_input("Header level for the Background line", value=3, min_value=1, max_value=6)
+        paste_background_level = st.number_input("Header level for the Background line", value=3, min_value=1,
+                                                 max_value=6, key="paste_background_h")
     with col3:
-        scenario_level = st.number_input("Header level for the Scenario line", value=3, min_value=1, max_value=6)
+        paste_scenario_level = st.number_input("Header level for the Scenario line", value=3, min_value=1,
+                                               max_value=6, key="paste_scenario_h")
 
-    if feature_level > 3 or background_level > 3 or scenario_level > 3:
+    if paste_feature_level > 3 or paste_background_level > 3 or paste_scenario_level > 3:
         st.info("Note: Notion only supports header levels up to level three ('###')")
 
     if user_input is not None:
         markdown = []
         lines = user_input.splitlines()
         for index, line in enumerate(lines):
-            line = gherkin_to_md(line, feature=feature_level, background=background_level, scenario=scenario_level)
+            line = gherkin_to_md(line, feature=paste_feature_level, background=paste_background_level,
+                                 scenario=paste_scenario_level)
             markdown.append(line)
 
         # Remove any blank lines (they muck with GitLab formatting)
